@@ -3,7 +3,7 @@ use ssh2::{Session, Sftp};
 use std::{fs::File, io, net::TcpStream, path::Path};
 
 pub struct SFTPClient {
-    conn: SFTP,
+    conn: Sftp,
 }
 
 impl SFTPClient {
@@ -28,11 +28,11 @@ impl SFTPClient {
         Ok(Self{ conn: sftp })
     }
 
-    pub fn local_to_remote(remote_path: &str, local_path: &str) -> Result<> {
+    pub fn local_to_remote(&self, remote_path: &str, local_path: &str) -> Result<()> {
         let mut local =
             File::open(local_path).with_context(|| format!("Failed to open {}", local_path))?;
 
-        let mut remote = sftp
+        let mut remote = self.conn
             .create(Path::new(remote_path))
             .with_context(|| format!("Failed to create remote file {}", remote_path))?;
 
@@ -42,8 +42,8 @@ impl SFTPClient {
         Ok(())
     }
 
-    pub fn remote_to_local(remote_path: &str, local_path: &str) -> Result<()> {
-        let mut remote = sftp
+    pub fn remote_to_local(&self, remote_path: &str, local_path: &str) -> Result<()> {
+        let mut remote = self.conn
             .open(Path::new(remote_path))
             .with_context(|| format!("Failed to open remote file {}", remote_path))?;
 

@@ -1,6 +1,6 @@
 use suppaftp::FtpStream;
 use std::fs::File;
-use std::io::Write;
+use std::io::{self, Write};
 use anyhow::{ Context, Result };
 
 pub struct FtpClient {
@@ -28,7 +28,7 @@ impl FtpClient {
         remote_path: &str,
         local_path: &str,
     ) -> Result<()> {
-        let contents = self
+        let mut remote_file = self
             .conn
             .retr_as_buffer(remote_path)
             .with_context(|| {format!("Failed to download remote file {remote_path}")})?;
@@ -36,8 +36,7 @@ impl FtpClient {
         let mut local_file = File::create(local_path)
             .with_context(|| {format!("Failed to create local file {local_path}")})?;
 
-        local_file
-            .write_all(contents.as_ref())
+        io::copy(&mut remote_file, &mut local_file)
             .with_context(|| {format!("Failed to write local file {local_path}")})?;
 
         Ok(())
