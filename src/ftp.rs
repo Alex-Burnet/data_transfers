@@ -1,21 +1,94 @@
+//! FTP client for transferring files between local and remote filesystems.
+//!
+//! This module provides the [`FtpClient`] struct, which wraps an FTP connection
+//! and provides methods for uploading and downloading files.
+//!
+//! # Example
+//!
+//! ```no_run
+//! use data_transfers::ftp::FtpClient;
+//!
+//! // Connect to FTP server
+//! let mut client = FtpClient::connect(
+//!     "ftp.example.com",
+//!     "21",
+//!     "username",
+//!     "password"
+//! ).expect("Failed to connect to FTP server");
+//!
+//! // Download a file
+//! client.remote_to_local("/remote/file.txt", "local/file.txt")
+//!     .expect("Failed to download file");
+//! ```
+
 use suppaftp::FtpStream;
 use std::fs::File;
 use std::io::{self, Write};
 use anyhow::{ Context, Result };
 
+/// Client for interacting with an FTP server.
+///
+/// This struct wraps an FTP connection and provides methods for uploading
+/// and downloading files between the local filesystem and remote server.
+///
+/// # Thread Safety
+///
+/// The `FtpClient` requires `&mut self` for all operations, indicating it is
+/// not `Send` or `Sync`. Do not share instances across threads.
+///
+/// # Connection Persistence
+///
+/// The connection remains open after creation and must be kept alive for
+/// multiple operations. Some FTP servers may timeout idle connections.
+///
+/// # Errors
+///
+/// This client can fail due to:
+/// - Network connection failures
+/// - Authentication failures
+/// - File not found on remote server
+/// - Permission issues
+/// - File I/O errors (creation, writing, reading)
 pub struct FtpClient {
     conn: FtpStream,
 }
 
 impl FtpClient {
     /// Opens and authenticates an FTP connection using the configured server credentials.
-    /// Returns a result containing an FTPStream
+    ///
+    /// # Arguments
+    /// * `host` - The FTP server hostname or IP address (e.g., `"ftp.example.com"`)
+    /// * `port` - The FTP server port number (e.g., `"21"` for standard FTP, `"22"` for SFTP)
+    /// * `username` - The FTP username for authentication
+    /// * `password` - The FTP password for authentication
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if:
+    /// - The server is unreachable or the connection times out
+    /// - Authentication fails with invalid credentials
+    /// - The port is invalid or not listening
+    /// - Network connectivity issues occur
+    ///
+    /// # Example
+    ///
+    /// ```no_run
+    /// use data_transfers::ftp::FtpClient;
+    ///
+    /// let mut client = FtpClient::connect(
+    ///     "ftp.example.com",
+    ///     "21",
+    ///     "username",
+    ///     "password"
+    /// )?;
+    /// # Ok::<_, anyhow::Error>(())
+    /// ```
     pub fn connect(host: &str, port: &str, username: &str, password: &str) -> Result<Self> {
-        // Set up ftp connection
+        // Set up FTP connection to the specified host and port
         let mut conn = FtpStream::connect(format!("{host}:{port}"))
             .with_context(|| format!("Failed to connect to FTP server {host}:{port}"))?;
 
-        // Login to FTP server
+        // Authenticate with the FTP server using provided credentials
         conn.login(username, password)
             .with_context(|| "Failed to authenticate with FTP server")?;
 
