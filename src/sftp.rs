@@ -1,5 +1,5 @@
 use anyhow::{Context, Result};
-use ssh2::Session;
+use ssh2::{Session, Sftp};
 use std::{fs::File, io, net::TcpStream, path::Path};
 
 pub struct SFTPClient {
