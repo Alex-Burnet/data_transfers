@@ -2,6 +2,10 @@
 name = "data_transfers"
 version = "0.1.0"
 edition = "2024"
+description = "A reusable Rust library for transferring data between databases, local filesystems, and remote file-transfer servers."
+license = "MIT"
+readme = "README.md"
+repository = "https://github.com/Alex-Burnet/data_transfers"
 
 [dependencies]
 anyhow = "1.0.104"
