@@ -7,7 +7,8 @@ use std::{fs::File, io, net::TcpStream, path::Path};
 /// This struct wraps an SFTP connection and provides methods for uploading and downloading files.
 /// 
 /// # Thread Safety
-/// The `SftpClient` is not `Send` or `Sync`. Do not share instances across threads.
+/// SftpClient is Send and Sync. Operations require mutable access to the 
+/// client because the underlying SFTP connection maintains connection state.
 /// 
 /// # Connection Persistence
 /// The connection remains open after creation and must be kept alive for multiple operations.
@@ -34,7 +35,7 @@ impl SftpClient {
     /// 
     /// # Example
     /// ```no_run
-    /// use sftp_client::SftpClient;
+    /// use data_transfers::sftp::SftpClient;
     /// 
     /// let client = SftpClient::connect("example.com", "22", "username", "password").unwrap();
     /// ```
@@ -72,6 +73,14 @@ impl SftpClient {
     /// # Returns
     /// A result indicating success or failure.
     pub fn local_to_remote(&self, local_path: &str, remote_path: &str) -> Result<()> {
+        if remote_path.is_empty() {
+            anyhow::bail!("Remote path cannot be empty");
+        }
+
+        if local_path.is_empty() {
+            anyhow::bail!("Local path cannot be empty");
+        }
+
         let mut local =
             File::open(local_path).with_context(|| format!("Failed to open {}", local_path))?;
 
@@ -94,6 +103,14 @@ impl SftpClient {
     /// # Returns
     /// A result indicating success or failure.
     pub fn remote_to_local(&self, remote_path: &str, local_path: &str) -> Result<()> {
+        if remote_path.is_empty() {
+            anyhow::bail!("Remote path cannot be empty");
+        }
+
+        if local_path.is_empty() {
+            anyhow::bail!("Local path cannot be empty");
+        }
+        
         let mut remote = self.conn
             .open(Path::new(remote_path))
             .with_context(|| format!("Failed to open remote file {}", remote_path))?;

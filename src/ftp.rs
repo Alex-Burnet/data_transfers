@@ -33,8 +33,8 @@ use anyhow::{ Context, Result };
 ///
 /// # Thread Safety
 ///
-/// The `FtpClient` requires `&mut self` for all operations, indicating it is
-/// not `Send` or `Sync`. Do not share instances across threads.
+/// FtpClient is Send and Sync. Operations require mutable access to the 
+/// client because the underlying FTP connection maintains connection state.
 ///
 /// # Connection Persistence
 ///
@@ -101,6 +101,14 @@ impl FtpClient {
         remote_path: &str,
         local_path: &str,
     ) -> Result<()> {
+        if remote_path.is_empty() {
+            anyhow::bail!("Remote path cannot be empty");
+        }
+
+        if local_path.is_empty() {
+            anyhow::bail!("Local path cannot be empty");
+        }
+
         let mut remote_file = self
             .conn
             .retr_as_buffer(remote_path)
@@ -121,6 +129,14 @@ impl FtpClient {
         local_path: &str,
         remote_path: &str,
     ) -> Result<()> {
+        if remote_path.is_empty() {
+            anyhow::bail!("Remote path cannot be empty");
+        }
+
+        if local_path.is_empty() {
+            anyhow::bail!("Local path cannot be empty");
+        }
+        
         let mut local_file = File::open(local_path)
             .with_context(|| {format!("Failed to open local file {local_path}")})?;
 
@@ -129,5 +145,5 @@ impl FtpClient {
             .with_context(|| {format!("Failed to upload file to {remote_path}")})?;
 
         Ok(())
-}
+    }
 }
